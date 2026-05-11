@@ -20,6 +20,11 @@ from modules.database import Database
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("ACIS_SECRET_KEY", hashlib.sha256(b"ACIS-242-56-015").hexdigest())
+app.config.update(
+    SESSION_COOKIE_HTTPONLY=True,
+    SESSION_COOKIE_SAMESITE="Lax",
+    SESSION_COOKIE_SECURE=os.environ.get("ACIS_COOKIE_SECURE", "1").lower() not in {"0", "false", "no"},
+)
 app.permanent_session_lifetime = timedelta(hours=8)
 
 monitor = SystemMonitor()

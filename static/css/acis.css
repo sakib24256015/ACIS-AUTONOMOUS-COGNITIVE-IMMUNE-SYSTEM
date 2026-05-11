@@ -584,6 +584,38 @@ html, body {
   letter-spacing: 0.5px;
 }
 
+.login-access {
+  margin-top: 18px;
+  padding: 12px 14px;
+  border: 1px solid rgba(0,212,255,0.18);
+  border-left: 3px solid var(--cyan-dim);
+  border-radius: var(--radius);
+  background: rgba(0,212,255,0.04);
+}
+.login-access-title {
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 1.8px;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+.login-access-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  padding: 4px 0;
+  border-top: 1px solid rgba(255,255,255,0.04);
+}
+.login-access-row span { color: var(--text-dim); }
+.login-access-row strong {
+  color: var(--cyan);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+  text-align: right;
+}
+
 .login-student {
   margin-top: 28px;
   padding-top: 20px;

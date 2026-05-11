@@ -1,0 +1,26 @@
+app = "acis-24256015"
+primary_region = "sin"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[env]
+  ACIS_ALLOW_PRIVATE_TARGETS = "0"
+  ACIS_DB_PATH = "/data/acis.db"
+
+[http_service]
+  internal_port = 8080
+  force_https = true
+  auto_stop_machines = false
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+[[vm]]
+  cpu_kind = "shared"
+  cpus = 1
+  memory_mb = 512
+
+[[mounts]]
+  source = "acis_data"
+  destination = "/data"

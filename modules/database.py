@@ -8,7 +8,10 @@ import os
 import datetime
 from typing import Optional
 
-DB_PATH = os.path.join(os.path.dirname(__file__), "..", "acis.db")
+DB_PATH = os.environ.get(
+    "ACIS_DB_PATH",
+    os.path.join(os.path.dirname(__file__), "..", "acis.db")
+)
 
 SEV_ORDER = {"CRITICAL": 0, "HIGH": 1, "MEDIUM": 2, "LOW": 3, "INFO": 4, "WARNING": 5}
 
@@ -17,6 +20,7 @@ class Database:
 
     def __init__(self):
         self.db_path = os.path.abspath(DB_PATH)
+        os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self.init_db()
 
     def _conn(self):

@@ -1,0 +1,33 @@
+# Python runtime
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+.venv/
+venv/
+env/
+
+# Local/runtime data
+acis.db
+*.db
+*.sqlite
+*.sqlite3
+*.log
+stderr.log
+tmp/
+
+# Deployment archives
+*.zip
+*.tar
+*.tar.gz
+
+# OS/editor files
+.DS_Store
+._*
+.vscode/
+.idea/
+
+# Environment and secrets
+.env
+.env.*

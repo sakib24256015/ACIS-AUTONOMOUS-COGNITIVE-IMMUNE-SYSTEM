@@ -1,0 +1,194 @@
+{% extends "base.html" %}
+{% block title %}ACIS — System Information{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-pc-display me-2" style="color:var(--green);"></i>SYSTEM INFORMATION</h1>
+  <p>HOST IDENTITY · HARDWARE TELEMETRY · DISK PARTITIONS · THERMAL SENSORS</p>
+</div>
+
+<div class="row g-3 mb-4">
+  <!-- HOST INFO -->
+  <div class="col-md-6">
+    <div class="acis-card">
+      <div class="card-header-acis">
+        <i class="bi bi-hdd-network" style="color:var(--cyan);"></i>
+        <h6>HOST IDENTITY</h6>
+      </div>
+      <div class="card-body-acis">
+        <table style="width:100%;">
+          {% for label, value in [
+            ('HOSTNAME',    host.hostname),
+            ('LOCAL IP',    host.local_ip),
+            ('FQDN',        host.fqdn),
+            ('OS',          host.os),
+            ('OS VERSION',  host.os_version),
+            ('MACHINE',     host.machine),
+            ('PROCESSOR',   host.processor),
+            ('PYTHON',      host.python),
+          ] %}
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);padding:7px 0;border-bottom:1px solid var(--border-line);width:130px;">{{ label }}</td>
+            <td class="mono" style="font-size:11px;color:var(--cyan);padding:7px 0;border-bottom:1px solid var(--border-line);">{{ value }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SYSTEM METRICS -->
+  <div class="col-md-6">
+    <div class="acis-card">
+      <div class="card-header-acis">
+        <i class="bi bi-speedometer2" style="color:var(--orange);"></i>
+        <h6>LIVE SYSTEM METRICS</h6>
+      </div>
+      <div class="card-body-acis">
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-2">
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">CPU UTILIZATION</span>
+            <span class="mono" style="font-size:10px;" id="cpu-val">{{ metrics.cpu_percent }}%</span>
+          </div>
+          <div class="acis-progress">
+            <div class="acis-progress-bar" id="cpu-bar" style="width:{{ metrics.cpu_percent }}%;background:var(--cyan);"></div>
+          </div>
+        </div>
+        <div class="mb-3">
+          <div class="d-flex justify-content-between mb-2">
+            <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">MEMORY</span>
+            <span class="mono" style="font-size:10px;" id="mem-val">{{ metrics.memory_percent }}%  ({{ (metrics.memory_used/1073741824)|round(1) }} / {{ (metrics.memory_total/1073741824)|round(1) }} GB)</span>
+          </div>
+          <div class="acis-progress">
+            <div class="acis-progress-bar" id="mem-bar" style="width:{{ metrics.memory_percent }}%;background:var(--green);"></div>
+          </div>
+        </div>
+        <table style="width:100%;margin-top:16px;">
+          {% for label, value in [
+            ('CPU CORES',    metrics.cpu_count),
+            ('CPU FREQ',     metrics.cpu_freq|int|string + ' MHz'),
+            ('TOTAL RAM',    (metrics.memory_total/1073741824)|round(2)|string + ' GB'),
+            ('NET ERRORS IN',metrics.net_errin),
+            ('NET ERRORS OUT',metrics.net_errout),
+            ('BOOT TIME',    metrics.boot_time[:19]),
+            ('UPTIME',       (metrics.uptime_seconds // 3600)|string + 'h ' + ((metrics.uptime_seconds % 3600) // 60)|string + 'm'),
+          ] %}
+          <tr>
+            <td style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);padding:5px 0;border-bottom:1px solid var(--border-line);width:150px;">{{ label }}</td>
+            <td class="mono" style="font-size:11px;color:var(--text-secondary);padding:5px 0;border-bottom:1px solid var(--border-line);">{{ value }}</td>
+          </tr>
+          {% endfor %}
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- DISK PARTITIONS -->
+<div class="acis-card mb-4">
+  <div class="card-header-acis">
+    <i class="bi bi-hdd" style="color:var(--orange);"></i>
+    <h6>DISK PARTITIONS</h6>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="acis-table">
+      <thead>
+        <tr><th>DEVICE</th><th>MOUNTPOINT</th><th>FS TYPE</th><th>TOTAL</th><th>USED</th><th>FREE</th><th>USAGE</th></tr>
+      </thead>
+      <tbody>
+        {% for d in disks %}
+        <tr>
+          <td class="mono" style="font-size:11px;color:var(--cyan);">{{ d.device }}</td>
+          <td class="mono" style="font-size:11px;">{{ d.mountpoint }}</td>
+          <td class="mono" style="font-size:10px;color:var(--text-dim);">{{ d.fstype }}</td>
+          <td class="mono" style="font-size:11px;">{{ (d.total/1073741824)|round(2) }} GB</td>
+          <td class="mono" style="font-size:11px;color:{% if d.percent > 85 %}var(--red){% else %}var(--text-secondary){% endif %};">{{ (d.used/1073741824)|round(2) }} GB</td>
+          <td class="mono" style="font-size:11px;color:var(--green);">{{ (d.free/1073741824)|round(2) }} GB</td>
+          <td style="min-width:140px;">
+            <div style="display:flex;align-items:center;gap:8px;">
+              <div class="acis-progress" style="flex:1;">
+                <div class="acis-progress-bar" style="width:{{ d.percent }}%;background:{% if d.percent>85 %}var(--red){% elif d.percent>70 %}var(--orange){% else %}var(--cyan){% endif %};"></div>
+              </div>
+              <span class="mono" style="font-size:10px;color:{% if d.percent>85 %}var(--red){% else %}var(--text-secondary){% endif %};">{{ d.percent }}%</span>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- TEMPERATURES -->
+{% if temps %}
+<div class="acis-card mb-4">
+  <div class="card-header-acis">
+    <i class="bi bi-thermometer-half" style="color:var(--red);"></i>
+    <h6>THERMAL SENSORS</h6>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="acis-table">
+      <thead>
+        <tr><th>SENSOR</th><th>CURRENT °C</th><th>HIGH °C</th><th>CRITICAL °C</th><th>STATUS</th></tr>
+      </thead>
+      <tbody>
+        {% for t in temps %}
+        <tr>
+          <td style="font-size:12px;">{{ t.label }}</td>
+          <td class="mono" style="font-size:13px;color:{% if t.current and t.high and t.current >= t.high * 0.9 %}var(--red){% elif t.current and t.high and t.current >= t.high * 0.7 %}var(--orange){% else %}var(--green){% endif %};">
+            {{ t.current or '—' }}
+          </td>
+          <td class="mono" style="font-size:11px;color:var(--text-dim);">{{ t.high or '—' }}</td>
+          <td class="mono" style="font-size:11px;color:var(--text-dim);">{{ t.critical or '—' }}</td>
+          <td>
+            {% if t.current and t.high and t.current >= t.high * 0.9 %}
+              <span class="sev-badge sev-CRITICAL">CRITICAL TEMP</span>
+            {% elif t.current and t.high and t.current >= t.high * 0.7 %}
+              <span class="sev-badge sev-HIGH">ELEVATED</span>
+            {% else %}
+              <span style="font-family:var(--font-mono);font-size:9px;color:var(--green);">✓ NORMAL</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% else %}
+<div class="acis-card mb-4">
+  <div class="card-body-acis" style="text-align:center;padding:24px;">
+    <div style="font-family:var(--font-mono);font-size:11px;color:var(--text-dim);">
+      <i class="bi bi-thermometer" style="font-size:20px;margin-bottom:8px;display:block;"></i>
+      THERMAL SENSORS NOT AVAILABLE ON THIS PLATFORM
+    </div>
+  </div>
+</div>
+{% endif %}
+
+<!-- PROJECT INFO -->
+<div class="acis-card">
+  <div class="card-header-acis">
+    <i class="bi bi-mortarboard" style="color:var(--purple);"></i>
+    <h6>PROJECT INFORMATION</h6>
+  </div>
+  <div class="card-body-acis">
+    <table style="width:100%;max-width:600px;">
+      {% for label, value in [
+        ('PROJECT NAME',  'ACIS — Autonomous Cognitive Immune System'),
+        ('SUBMITTED BY',  student_info.submitted_by),
+        ('STUDENT ID',    student_info.id),
+        ('DEPARTMENT',    student_info.department),
+        ('SUBMITTED TO',  student_info.submitted_to),
+        ('SUPERVISOR DEPT', student_info.supervisor_dept),
+        ('UNIVERSITY',    student_info.university),
+      ] %}
+      <tr>
+        <td style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);padding:7px 0;border-bottom:1px solid var(--border-line);width:160px;">{{ label }}</td>
+        <td style="font-size:12px;color:var(--text-secondary);padding:7px 0;border-bottom:1px solid var(--border-line);">{{ value }}</td>
+      </tr>
+      {% endfor %}
+    </table>
+  </div>
+</div>
+{% endblock %}

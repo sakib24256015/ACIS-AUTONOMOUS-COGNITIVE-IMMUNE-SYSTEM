@@ -1,0 +1,212 @@
+{% extends "base.html" %}
+{% block title %}ACIS — Command Dashboard{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-grid-1x2 me-2" style="color:var(--cyan);"></i>COMMAND DASHBOARD</h1>
+  <p>REAL-TIME SYSTEM TELEMETRY · THREAT OVERVIEW · LIVE MONITORING ACTIVE</p>
+</div>
+
+<!-- ══ THREAT LEVEL ══ -->
+{% set crit = stats.critical|int %}
+{% set high = stats.high|int %}
+{% if crit > 0 %}
+  {% set threat = 'CRITICAL' %}
+{% elif high > 0 %}
+  {% set threat = 'HIGH' %}
+{% elif stats.medium|int > 0 %}
+  {% set threat = 'MEDIUM' %}
+{% else %}
+  {% set threat = 'LOW' %}
+{% endif %}
+
+<div class="alert-critical" style="margin-bottom:20px; {% if threat == 'LOW' %}border-left-color:var(--green);color:var(--green);background:rgba(0,255,136,0.05);{% elif threat == 'MEDIUM' %}border-left-color:var(--yellow);color:var(--yellow);background:rgba(255,211,42,0.05);{% endif %}">
+  <i class="bi bi-shield{% if threat == 'LOW' %}-check{% elif threat == 'CRITICAL' %}-x{% else %}-exclamation{% endif %}-fill" style="font-size:18px;"></i>
+  <div>
+    <div style="font-size:10px;letter-spacing:1px;">CURRENT THREAT LEVEL</div>
+    <div style="font-family:var(--font-display);font-size:15px;letter-spacing:3px;">{{ threat }}</div>
+  </div>
+  <div class="ms-auto" style="font-size:10px;letter-spacing:0.5px;">
+    CRITICAL: {{ stats.critical }} &nbsp;|&nbsp; HIGH: {{ stats.high }} &nbsp;|&nbsp; MEDIUM: {{ stats.medium }} &nbsp;|&nbsp; TOTAL EVENTS: {{ stats.total }}
+  </div>
+  <button class="btn-acis scan-btn" style="margin-left:16px;">
+    <i class="bi bi-radar"></i> SCAN NOW
+  </button>
+</div>
+
+<!-- ══ METRIC CARDS ══ -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card stat-cyan">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="stat-label">CPU UTILIZATION</div>
+        <div id="spark-cpu" class="sparkline"></div>
+      </div>
+      <div class="stat-val" id="cpu-val">{{ metrics.cpu_percent }}%</div>
+      <div class="stat-sub">{{ metrics.cpu_count }} CORES · {{ metrics.cpu_freq|int }} MHz</div>
+      <div class="acis-progress mt-2">
+        <div class="acis-progress-bar" id="cpu-bar" style="width:{{ metrics.cpu_percent }}%;background:var(--cyan);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="stat-card stat-green">
+      <div class="d-flex justify-content-between align-items-center mb-2">
+        <div class="stat-label">MEMORY USAGE</div>
+        <div id="spark-mem" class="sparkline"></div>
+      </div>
+      <div class="stat-val" id="mem-val">{{ metrics.memory_percent }}%</div>
+      <div class="stat-sub">{{ (metrics.memory_used/1073741824)|round(1) }} GB / {{ (metrics.memory_total/1073741824)|round(1) }} GB</div>
+      <div class="acis-progress mt-2">
+        <div class="acis-progress-bar" id="mem-bar" style="width:{{ metrics.memory_percent }}%;background:var(--green);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="stat-card stat-orange">
+      <div class="stat-label mb-2">DISK UTILIZATION</div>
+      <div class="stat-val" id="disk-val">{{ metrics.disk_percent }}%</div>
+      <div class="stat-sub">{{ (metrics.disk_used/1073741824)|round(1) }} GB / {{ (metrics.disk_total/1073741824)|round(1) }} GB</div>
+      <div class="acis-progress mt-2">
+        <div class="acis-progress-bar" id="disk-bar" style="width:{{ metrics.disk_percent }}%;background:var(--orange);"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="col-md-3">
+    <div class="stat-card stat-purple">
+      <div class="stat-label mb-2">SYSTEM UPTIME</div>
+      <div class="stat-val" id="uptime-val" style="font-size:24px;">
+        {{ (metrics.uptime_seconds // 3600) }}h {{ ((metrics.uptime_seconds % 3600) // 60) }}m
+      </div>
+      <div class="stat-sub">BOOT: {{ metrics.boot_time[:16] }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ NETWORK TRAFFIC + ALERTS STATS ══ -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card stat-cyan">
+      <div class="stat-label mb-2">NET TX SPEED</div>
+      <div class="stat-val" id="traffic-sent" style="font-size:22px;">—</div>
+      <div id="spark-sent" class="sparkline mt-2"></div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card stat-green">
+      <div class="stat-label mb-2">NET RX SPEED</div>
+      <div class="stat-val" id="traffic-recv" style="font-size:22px;">—</div>
+      <div id="spark-recv" class="sparkline mt-2"></div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card stat-red">
+      <div class="stat-label mb-2">FLAGGED CONNECTIONS</div>
+      <div class="stat-val" style="font-size:32px;color:var(--red);text-shadow:var(--glow-red);">{{ flagged_count }}</div>
+      <div class="stat-sub">SUSPICIOUS NETWORK ACTIVITY</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card stat-orange">
+      <div class="stat-label mb-2">EVENTS TODAY</div>
+      <div class="stat-val" style="font-size:32px;">{{ stats.today }}</div>
+      <div class="stat-sub">TOTAL LOGGED: {{ stats.total }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ TOP PROCESSES + RECENT ALERTS ══ -->
+<div class="row g-3 mb-4">
+  <!-- Top Processes -->
+  <div class="col-md-5">
+    <div class="acis-card">
+      <div class="card-header-acis">
+        <i class="bi bi-cpu" style="color:var(--cyan);"></i>
+        <h6>TOP PROCESSES BY CPU</h6>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="acis-table">
+          <thead>
+            <tr><th>PID</th><th>NAME</th><th>CPU%</th><th>MEM</th><th>STATUS</th></tr>
+          </thead>
+          <tbody>
+            {% for p in top_procs %}
+            <tr {% if p.suspicious %}style="background:rgba(255,61,113,0.05);"{% endif %}>
+              <td class="mono" style="font-size:10px;color:var(--text-dim);">{{ p.pid }}</td>
+              <td style="font-size:12px;color:{% if p.suspicious %}var(--red){% else %}var(--text-primary){% endif %};">
+                {% if p.suspicious %}<i class="bi bi-exclamation-triangle-fill" style="color:var(--red);margin-right:4px;font-size:10px;"></i>{% endif %}
+                {{ p.name }}
+              </td>
+              <td>
+                <div style="display:flex;align-items:center;gap:8px;">
+                  <div class="acis-progress" style="flex:1;min-width:40px;">
+                    <div class="acis-progress-bar" style="width:{{ [p.cpu,100]|min }}%;background:{% if p.cpu>70 %}var(--red){% elif p.cpu>40 %}var(--orange){% else %}var(--cyan){% endif %};"></div>
+                  </div>
+                  <span class="mono" style="font-size:10px;color:{% if p.cpu>70 %}var(--red){% else %}var(--text-secondary){% endif %};">{{ p.cpu }}%</span>
+                </div>
+              </td>
+              <td class="mono" style="font-size:10px;color:var(--text-secondary);">{{ p.mem_mb }} MB</td>
+              <td><span class="sev-badge {% if p.status=='running' %}sev-INFO{% else %}sev-LOW{% endif %}">{{ p.status|upper }}</span></td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recent Alerts -->
+  <div class="col-md-7">
+    <div class="acis-card">
+      <div class="card-header-acis">
+        <i class="bi bi-shield-exclamation" style="color:var(--red);"></i>
+        <h6>RECENT SECURITY EVENTS</h6>
+        <a href="{{ url_for('alerts') }}" class="btn-acis ms-auto" style="font-size:9px;padding:3px 10px;">VIEW ALL</a>
+      </div>
+      <div style="overflow-x:auto;max-height:340px;overflow-y:auto;">
+        <table class="acis-table">
+          <thead>
+            <tr><th>TIMESTAMP</th><th>SEV</th><th>CAT</th><th>MESSAGE</th></tr>
+          </thead>
+          <tbody id="alert-tbody">
+            {% for a in alerts %}
+            <tr>
+              <td class="mono" style="font-size:10px;color:var(--text-dim);white-space:nowrap;">{{ a.ts }}</td>
+              <td><span class="sev-badge sev-{{ a.severity }}">{{ a.severity }}</span></td>
+              <td class="mono" style="font-size:10px;color:var(--cyan-dim);">{{ a.category }}</td>
+              <td style="font-size:11px;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ a.message }}">{{ a.message }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ CPU CORES ══ -->
+<div class="acis-card mb-4">
+  <div class="card-header-acis">
+    <i class="bi bi-grid" style="color:var(--green);"></i>
+    <h6>CPU CORE UTILIZATION</h6>
+  </div>
+  <div class="card-body-acis">
+    <div class="row g-3">
+      {% for pct in metrics.cpu_per_core %}
+      <div class="col-md-2">
+        <div style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-bottom:4px;">CORE {{ loop.index0 }}</div>
+        <div class="acis-progress">
+          <div class="acis-progress-bar" data-pct="{{ pct }}"
+               style="width:0%;background:{% if pct>80 %}var(--red){% elif pct>50 %}var(--orange){% else %}var(--green){% endif %};transition:width 0.8s ease;">
+          </div>
+        </div>
+        <div class="mono" style="font-size:10px;color:var(--text-secondary);margin-top:3px;">{{ pct }}%</div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+{% endblock %}

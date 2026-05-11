@@ -1,0 +1,107 @@
+{% extends "base.html" %}
+{% block title %}ACIS — Process Intelligence{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-cpu me-2" style="color:var(--cyan);"></i>PROCESS INTELLIGENCE</h1>
+  <p>LIVE PROCESS ENUMERATION · BEHAVIORAL SCORING · THREAT DETECTION · RESOURCE ANALYSIS</p>
+</div>
+
+<!-- METRICS -->
+<div class="row g-3 mb-4">
+  <div class="col-md-3">
+    <div class="stat-card stat-cyan">
+      <div class="stat-label mb-2">TOTAL PROCESSES</div>
+      <div class="stat-val" style="font-size:30px;">{{ processes|length }}</div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card stat-red">
+      <div class="stat-label mb-2">SUSPICIOUS PROCESSES</div>
+      <div class="stat-val" style="font-size:30px;color:var(--red);text-shadow:var(--glow-red);">
+        {{ processes | selectattr('suspicious') | list | length }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card stat-orange">
+      <div class="stat-label mb-2">HIGH CPU (>50%)</div>
+      <div class="stat-val" style="font-size:30px;color:var(--orange);">
+        {{ processes | selectattr('cpu', 'greaterthan', 50) | list | length }}
+      </div>
+    </div>
+  </div>
+  <div class="col-md-3">
+    <div class="stat-card stat-cyan">
+      <div class="stat-label mb-2">CPU TOTAL</div>
+      <div class="stat-val" id="cpu-val" style="font-size:30px;">{{ metrics.cpu_percent }}%</div>
+      <div class="acis-progress mt-2">
+        <div class="acis-progress-bar" id="cpu-bar" style="width:{{ metrics.cpu_percent }}%;background:var(--cyan);"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% set suspicious_procs = processes | selectattr('suspicious') | list %}
+{% if suspicious_procs %}
+<div class="alert-critical mb-4">
+  <i class="bi bi-bug-fill" style="font-size:18px;"></i>
+  <div>⚠ {{ suspicious_procs|length }} SUSPICIOUS PROCESS(ES) DETECTED — IMMEDIATE REVIEW REQUIRED</div>
+</div>
+{% endif %}
+
+<!-- PROCESS TABLE -->
+<div class="acis-card">
+  <div class="card-header-acis">
+    <i class="bi bi-list-task" style="color:var(--cyan);"></i>
+    <h6>ALL RUNNING PROCESSES — SORTED BY CPU USAGE</h6>
+    <span class="ms-auto" style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);">REAL-TIME · LIVE DATA</span>
+  </div>
+  <div style="overflow-x:auto;max-height:600px;overflow-y:auto;">
+    <table class="acis-table">
+      <thead>
+        <tr><th>PID</th><th>PROCESS NAME</th><th>USER</th><th>STATUS</th><th>CPU%</th><th>MEM MB</th><th>THREADS</th><th>STARTED</th><th>RISK</th></tr>
+      </thead>
+      <tbody>
+        {% for p in processes %}
+        <tr {% if p.suspicious %}style="background:rgba(255,61,113,0.06);"{% endif %}>
+          <td class="mono" style="font-size:10px;color:var(--text-dim);">{{ p.pid }}</td>
+          <td style="font-size:12px;color:{% if p.suspicious %}var(--red){% else %}var(--text-primary){% endif %};">
+            {% if p.suspicious %}<i class="bi bi-exclamation-triangle-fill" style="color:var(--red);margin-right:4px;font-size:10px;"></i>{% endif %}
+            {{ p.name }}
+          </td>
+          <td class="mono" style="font-size:10px;color:var(--text-secondary);">{{ p.username[:16] }}</td>
+          <td>
+            <span class="sev-badge {% if p.status == 'running' %}sev-INFO{% elif p.status == 'sleeping' %}sev-LOW{% else %}sev-MEDIUM{% endif %}">
+              {{ p.status|upper }}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex;align-items:center;gap:6px;min-width:80px;">
+              <div class="acis-progress" style="flex:1;">
+                <div class="acis-progress-bar" style="width:{{ [p.cpu,100]|min }}%;background:{% if p.cpu>70 %}var(--red){% elif p.cpu>30 %}var(--orange){% else %}var(--cyan){% endif %};"></div>
+              </div>
+              <span class="mono" style="font-size:10px;width:36px;color:{% if p.cpu>70 %}var(--red){% else %}var(--text-secondary){% endif %};">{{ p.cpu }}%</span>
+            </div>
+          </td>
+          <td class="mono" style="font-size:11px;color:var(--text-secondary);">{{ p.mem_mb }}</td>
+          <td class="mono" style="font-size:11px;color:var(--text-dim);">{{ p.threads }}</td>
+          <td class="mono" style="font-size:10px;color:var(--text-dim);">{{ p.started }}</td>
+          <td>
+            {% if p.suspicious %}
+              <span class="sev-badge sev-CRITICAL">MALWARE RISK</span>
+            {% elif p.cpu > 80 %}
+              <span class="sev-badge sev-HIGH">HIGH CPU</span>
+            {% elif p.cpu > 40 %}
+              <span class="sev-badge sev-MEDIUM">ELEVATED</span>
+            {% else %}
+              <span style="font-family:var(--font-mono);font-size:9px;color:var(--green);">✓ NORMAL</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}

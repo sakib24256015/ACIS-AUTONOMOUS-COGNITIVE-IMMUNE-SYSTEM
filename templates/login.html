@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ACIS — Secure Authentication Portal</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css">
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/acis.css') }}">
+  <style>
+    .corner-info {
+      position: fixed;
+      top: 16px; right: 20px;
+      font-family: var(--font-mono);
+      font-size: 9px;
+      line-height: 1.7;
+      color: var(--text-muted);
+      text-align: right;
+      z-index: 10;
+    }
+    .corner-info strong { color: var(--cyan-dim); display: block; }
+    .corner-info .sub { color: var(--orange); }
+    .scan-line {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent, var(--cyan), transparent);
+      animation: scan-h 3s ease-in-out infinite;
+      z-index: 5;
+    }
+    @keyframes scan-h {
+      0% { transform: translateX(-100%); }
+      100% { transform: translateX(100vw); }
+    }
+  </style>
+</head>
+<body>
+<div class="scan-line"></div>
+
+<!-- Student Info — top right on login page too -->
+<div class="corner-info">
+  <strong>{{ student_info.submitted_by }}</strong>
+  ID: {{ student_info.id }}<br>
+  {{ student_info.department }}<br>
+  <span class="sub">SUBMITTED TO: {{ student_info.submitted_to }}</span><br>
+  {{ student_info.supervisor_dept }}<br>
+  {{ student_info.university }}
+</div>
+
+<div class="login-wrap">
+  <div class="login-grid"></div>
+
+  <div class="login-box">
+    <!-- Logo -->
+    <div class="login-logo">ACIS</div>
+    <div class="login-sub">AUTONOMOUS COGNITIVE IMMUNE SYSTEM<br>SECURE AUTHENTICATION PORTAL</div>
+
+    <!-- Error -->
+    {% if error %}
+    <div class="login-error">
+      <i class="bi bi-exclamation-triangle-fill" style="margin-right:8px;"></i>{{ error }}
+    </div>
+    {% endif %}
+
+    <!-- Form -->
+    <form method="POST" action="{{ url_for('login') }}">
+      <div class="form-group">
+        <label class="form-label">
+          <i class="bi bi-person" style="margin-right:4px;"></i>OPERATOR ID
+        </label>
+        <input type="text" name="username" class="form-control-acis"
+               autocomplete="username" required
+               value="{{ request.form.get('username', '') }}">
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">
+          <i class="bi bi-key" style="margin-right:4px;"></i>ACCESS KEY
+        </label>
+        <input type="password" name="password" class="form-control-acis"
+               autocomplete="current-password" required>
+      </div>
+
+      <button type="submit" class="btn-login">
+        <i class="bi bi-shield-lock" style="margin-right:8px;"></i>
+        AUTHENTICATE
+      </button>
+    </form>
+
+    <!-- Student info inside box -->
+    <div class="login-student">
+      <div style="margin-bottom:6px;color:var(--border-glow);font-size:8px;letter-spacing:2px;">PROJECT INFORMATION</div>
+      <strong style="color:var(--cyan-dim);">{{ student_info.submitted_by }}</strong>
+      ID: {{ student_info.id }} &nbsp;·&nbsp; {{ student_info.department }}<br>
+      <span style="color:var(--orange);">Submitted to: {{ student_info.submitted_to }}</span><br>
+      {{ student_info.supervisor_dept }}<br>
+      {{ student_info.university }}
+    </div>
+  </div>
+</div>
+
+<script>
+// Animate grid on load
+document.addEventListener('DOMContentLoaded', () => {
+  const box = document.querySelector('.login-box');
+  box.style.opacity = '0';
+  box.style.transform = 'translateY(20px)';
+  setTimeout(() => {
+    box.style.transition = 'all 0.5s ease';
+    box.style.opacity = '1';
+    box.style.transform = 'translateY(0)';
+  }, 100);
+});
+</script>
+</body>
+</html>

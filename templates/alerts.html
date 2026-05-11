@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% block title %}ACIS — Alerts & Events{% endblock %}
+
+{% block content %}
+<div class="page-header">
+  <h1><i class="bi bi-shield-exclamation me-2" style="color:var(--red);"></i>ALERTS &amp; SECURITY EVENTS</h1>
+  <p>PERSISTENT EVENT LOG · THREAT CLASSIFICATION · SEVERITY ANALYSIS · AUDIT TRAIL</p>
+</div>
+
+<!-- STAT CARDS -->
+<div class="row g-3 mb-4">
+  <div class="col-md-2">
+    <div class="stat-card stat-red">
+      <div class="stat-label mb-2">CRITICAL</div>
+      <div class="stat-val" style="font-size:30px;color:var(--red);text-shadow:var(--glow-red);">{{ stats.critical }}</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card stat-orange">
+      <div class="stat-label mb-2">HIGH</div>
+      <div class="stat-val" style="font-size:30px;color:var(--orange);">{{ stats.high }}</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card stat-orange">
+      <div class="stat-label mb-2">MEDIUM</div>
+      <div class="stat-val" style="font-size:30px;color:var(--yellow);">{{ stats.medium }}</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card stat-cyan">
+      <div class="stat-label mb-2">INFO</div>
+      <div class="stat-val" style="font-size:30px;">{{ stats.info }}</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card stat-cyan">
+      <div class="stat-label mb-2">TODAY</div>
+      <div class="stat-val" style="font-size:30px;color:var(--cyan);">{{ stats.today }}</div>
+    </div>
+  </div>
+  <div class="col-md-2">
+    <div class="stat-card stat-green">
+      <div class="stat-label mb-2">TOTAL</div>
+      <div class="stat-val" style="font-size:30px;color:var(--green);">{{ stats.total }}</div>
+    </div>
+  </div>
+</div>
+
+<!-- ACTIONS BAR -->
+<div class="d-flex align-items-center gap-2 mb-3">
+  <button class="btn-acis scan-btn"><i class="bi bi-radar"></i> RUN THREAT SCAN</button>
+  <a href="{{ url_for('alerts') }}" class="btn-acis"><i class="bi bi-arrow-clockwise"></i> REFRESH</a>
+  <span style="font-family:var(--font-mono);font-size:9px;color:var(--text-dim);margin-left:auto;">
+    SHOWING {{ alerts|length }} MOST RECENT EVENTS
+  </span>
+</div>
+
+<!-- ALERTS TABLE -->
+<div class="acis-card">
+  <div class="card-header-acis">
+    <i class="bi bi-list-columns" style="color:var(--red);"></i>
+    <h6>SECURITY EVENT LOG</h6>
+  </div>
+  <div style="overflow-x:auto;">
+    <table class="acis-table">
+      <thead>
+        <tr><th>ID</th><th>TIMESTAMP</th><th>SEVERITY</th><th>CATEGORY</th><th>MESSAGE</th><th>SOURCE</th><th>ACTION</th></tr>
+      </thead>
+      <tbody>
+        {% for a in alerts %}
+        <tr id="alert-row-{{ a.id }}" {% if a.dismissed %}style="opacity:0.35;"{% elif a.severity == 'CRITICAL' %}style="background:rgba(255,61,113,0.04);"{% endif %}>
+          <td class="mono" style="font-size:10px;color:var(--text-muted);">#{{ a.id }}</td>
+          <td class="mono" style="font-size:10px;color:var(--text-dim);white-space:nowrap;">{{ a.ts }}</td>
+          <td><span class="sev-badge sev-{{ a.severity }}">{{ a.severity }}</span></td>
+          <td class="mono" style="font-size:10px;color:var(--cyan-dim);">{{ a.category }}</td>
+          <td style="font-size:12px;max-width:400px;">{{ a.message }}</td>
+          <td class="mono" style="font-size:10px;color:var(--text-dim);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="{{ a.source }}">{{ a.source or '—' }}</td>
+          <td>
+            {% if not a.dismissed %}
+            <button onclick="dismissAlert({{ a.id }})"
+                    class="btn-acis" style="font-size:9px;padding:2px 8px;">
+              DISMISS
+            </button>
+            {% else %}
+            <span class="mono" style="font-size:9px;color:var(--text-muted);">DISMISSED</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+</div>
+{% endblock %}
